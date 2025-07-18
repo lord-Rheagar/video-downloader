@@ -1,0 +1,41 @@
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "Video Downloader - Download Videos from YouTube, Twitter, Instagram & More",
+  description: "Free online video downloader for YouTube, Twitter, Instagram, Facebook, and Reddit. Fast, reliable, and easy to use. No registration required.",
+  keywords: "video downloader, youtube downloader, twitter video download, instagram video download, facebook video download, reddit video download",
+  authors: [{ name: "Video Downloader" }],
+  openGraph: {
+    title: "Video Downloader - Multi-Platform Video Downloads",
+    description: "Download videos from your favorite platforms with ease",
+    type: "website",
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className="dark">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white`}
+      >
+        {children}
+      </body>
+    </html>
+  );
+}
