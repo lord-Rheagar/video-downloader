@@ -91,6 +91,7 @@ export function PlatformSelector({ value, onChange }: PlatformSelectorProps) {
                       }
                     }}
                     disabled={!config.supported}
+                    suppressHydrationWarning
                   >
                     <PlatformIcon
                       className="mr-2 h-4 w-4"

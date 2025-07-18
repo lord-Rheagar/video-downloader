@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { SuppressExtensionErrors } from "@/components/suppress-extension-errors";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,10 +33,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <script src="/suppress-errors.js" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-black text-white`}
+        suppressHydrationWarning
       >
-        {children}
+        <SuppressExtensionErrors />
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </body>
     </html>
   );
