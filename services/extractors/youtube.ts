@@ -1,24 +1,60 @@
-import ytdl from 'ytdl-core';
+import play from 'play-dl';
 import { VideoInfo, VideoFormat } from '@/types';
 
 export async function extractYouTubeVideo(url: string): Promise<VideoInfo> {
+  if (!url) {
+    throw new Error('URL is missing or invalid.');
+  }
   try {
-    const info = await ytdl.getInfo(url);
+    // Only get video info, don't create a stream yet
+    const info = await play.video_info(url);
     
-    const formats: VideoFormat[] = info.formats
-      .filter(format => format.hasVideo && format.hasAudio)
+    // Filter for only 360p, 720p, and 1080p MP4 formats
+    const allowedQualities = ['360p', '720p', '1080p'];
+    
+    // First, filter and map all valid formats
+    const allFormats = info.format
+      .filter(format => {
+        // Check if it has a quality label and is MP4
+        if (!format.qualityLabel || !format.mimeType) return false;
+        
+        // Check if it's an allowed quality
+        if (!allowedQualities.includes(format.qualityLabel)) return false;
+        
+        // Check if it's MP4 format
+        const mimeType = format.mimeType.toLowerCase();
+        return mimeType.includes('video/mp4');
+      })
       .map(format => ({
-        quality: format.qualityLabel || format.quality || 'unknown',
-        format: format.container || 'mp4',
+        quality: format.qualityLabel || 'unknown',
+        format: 'mp4',
         size: format.contentLength ? parseInt(format.contentLength) : undefined,
-        url: format.url
+        url: format.url || ''
       }));
+    
+    // Remove duplicates by keeping only one format per quality level
+    const uniqueFormats = new Map<string, VideoFormat>();
+    allFormats.forEach(format => {
+      const existing = uniqueFormats.get(format.quality);
+      // Keep the format with the larger file size (usually better quality)
+      if (!existing || (format.size && existing.size && format.size > existing.size)) {
+        uniqueFormats.set(format.quality, format);
+      }
+    });
+    
+    // Convert back to array and sort
+    const formats: VideoFormat[] = Array.from(uniqueFormats.values())
+      .sort((a, b) => {
+        const qualityOrder = { '1080p': 0, '720p': 1, '360p': 2 };
+        return (qualityOrder[a.quality as keyof typeof qualityOrder] || 999) - 
+               (qualityOrder[b.quality as keyof typeof qualityOrder] || 999);
+      });
 
     return {
-      title: info.videoDetails.title,
-      duration: parseInt(info.videoDetails.lengthSeconds),
-      thumbnail: info.videoDetails.thumbnails[info.videoDetails.thumbnails.length - 1]?.url,
-      author: info.videoDetails.author.name,
+      title: info.video_details.title || '',
+      duration: info.video_details.durationInSec,
+      thumbnail: info.video_details.thumbnails[info.video_details.thumbnails.length - 1]?.url,
+      author: info.video_details.channel?.name || '',
       platform: 'youtube',
       formats
     };
@@ -29,6 +65,7 @@ export async function extractYouTubeVideo(url: string): Promise<VideoInfo> {
 }
 
 export function downloadYouTubeVideo(url: string, quality?: string) {
-  const options: ytdl.downloadOptions = quality ? { quality } : { quality: 'highest' };
-  return ytdl(url, options);
+  return play.stream(url, { 
+    quality: quality ? (parseInt(quality) as 1 | 2 | 0) : undefined 
+  });
 }

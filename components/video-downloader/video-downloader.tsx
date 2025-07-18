@@ -5,7 +5,7 @@ import { AlertCircle, Zap } from "lucide-react";
 import { PlatformSelector } from "./platform-selector";
 import { UrlInput } from "./url-input";
 import { DownloadButton } from "./download-button";
-// import { VideoInfo } from "./video-info";
+import { VideoInfo } from "./video-info";
 import { useVideoDownload } from "@/hooks/use-video-download";
 import { Platform } from "@/types";
 import { cn } from "@/lib/utils";
@@ -75,16 +75,18 @@ export function VideoDownloader() {
           </div>
         </div>
 
-        {/* Download Button */}
-        <div className="flex justify-center">
-          <DownloadButton
-            onClick={handleDownload}
-            isLoading={isLoading}
-            isSuccess={!!videoInfo && !isLoading}
-            disabled={!url || !!error}
-            size="lg"
-          />
-        </div>
+        {/* Download Button - Only show when no video info */}
+        {!videoInfo && (
+          <div className="flex justify-center">
+            <DownloadButton
+              onClick={handleDownload}
+              isLoading={isLoading}
+              isSuccess={!!videoInfo && !isLoading}
+              disabled={!url || !!error}
+              size="lg"
+            />
+          </div>
+        )}
 
         {/* Error Message */}
         {error && (
@@ -104,12 +106,16 @@ export function VideoDownloader() {
           </div>
         )}
 
-        {/* Video Info Display - Placeholder for now */}
+        {/* Video Info Display */}
         {videoInfo && !error && (
-          <div className="p-6 bg-gray-900/50 border border-gray-700 rounded-lg">
-            <h3 className="text-lg font-semibold text-white mb-2">{videoInfo.title}</h3>
-            <p className="text-gray-400">Video information loaded successfully!</p>
-          </div>
+          <VideoInfo
+            videoInfo={videoInfo}
+            onDownload={(format) => {
+              // TODO: Implement actual download with selected format
+              console.log('Download with format:', format);
+            }}
+            isDownloading={false}
+          />
         )}
       </div>
     </div>
