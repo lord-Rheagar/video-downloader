@@ -14,6 +14,7 @@ export interface VideoFormat {
   format: string;
   size?: number;
   url?: string;
+  formatId?: string;
 }
 
 export interface DownloadProgress {

@@ -7,13 +7,39 @@ import { UrlInput } from "./url-input";
 import { DownloadButton } from "./download-button";
 import { VideoInfo } from "./video-info";
 import { useVideoDownload } from "@/hooks/use-video-download";
-import { Platform } from "@/types";
+import { useVideoStreamDownload } from "@/hooks/use-video-stream-download";
+import { Platform, VideoFormat } from "@/types";
 import { cn } from "@/lib/utils";
 
 export function VideoDownloader() {
+  const [isClient, setIsClient] = React.useState(false);
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
   const [url, setUrl] = React.useState("");
   const [selectedPlatform, setSelectedPlatform] = React.useState<Platform>("youtube");
+  const [downloadError, setDownloadError] = React.useState<string | null>(null);
+  const [showAlternatives, setShowAlternatives] = React.useState(false);
   const { isLoading, error, videoInfo, downloadVideo, reset } = useVideoDownload();
+  
+  // Hook for streaming downloads
+  const { downloadVideo: streamDownload, isDownloading } = useVideoStreamDownload({
+    url: videoInfo?.url || url,
+    onError: (error) => {
+      // Check if this is an alternatives message
+      if (error.includes('YouTube is blocking')) {
+        setShowAlternatives(true);
+      } else {
+        setDownloadError(error);
+        // Clear error after 5 seconds
+        setTimeout(() => setDownloadError(null), 5000);
+      }
+    },
+    onSuccess: () => {
+      // Could show success message here
+      setShowAlternatives(false);
+    },
+  });
 
   const handleDownload = async () => {
     if (!url) return;
@@ -60,6 +86,7 @@ export function VideoDownloader() {
       {/* Main Controls */}
       <div className="space-y-6">
         {/* Platform Selector and URL Input Row */}
+        {isClient &&
         <div className="flex flex-col md:flex-row gap-4">
           <PlatformSelector
             value={selectedPlatform}
@@ -73,7 +100,7 @@ export function VideoDownloader() {
               disabled={isLoading}
             />
           </div>
-        </div>
+        </div>}
 
         {/* Download Button - Only show when no video info */}
         {!videoInfo && (
@@ -89,14 +116,14 @@ export function VideoDownloader() {
         )}
 
         {/* Error Message */}
-        {error && (
+        {(error || downloadError) && (
           <div className="animate-in fade-in-0 slide-in-from-top-1 duration-300">
             <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
               <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500 mt-0.5" />
               <div className="flex-1">
                 <h4 className="text-sm font-semibold text-red-500 mb-1">Error</h4>
-                <p className="text-sm text-red-400">{error}</p>
-                {error.includes('coming soon') && (
+                <p className="text-sm text-red-400">{error || downloadError}</p>
+                {error && error.includes('coming soon') && (
                   <p className="text-xs text-gray-400 mt-2">
                     Currently, only YouTube videos are supported. More platforms coming soon!
                   </p>
@@ -111,13 +138,19 @@ export function VideoDownloader() {
           <VideoInfo
             videoInfo={videoInfo}
             onDownload={(format) => {
-              // TODO: Implement actual download with selected format
-              console.log('Download with format:', format);
+              // Clear any previous download errors
+              setDownloadError(null);
+              setShowAlternatives(false);
+              // Trigger the download
+              streamDownload(format);
             }}
-            isDownloading={false}
+            isDownloading={isDownloading}
+            showAlternatives={showAlternatives}
+            onCloseAlternatives={() => setShowAlternatives(false)}
           />
         )}
       </div>
+
     </div>
   );
 }
