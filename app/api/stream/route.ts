@@ -75,11 +75,11 @@ export async function POST(request: NextRequest) {
 
     const { url, formatId, quality } = validationResult.data;
 
-    // Define quality map early - using H.264 codec for maximum compatibility
+    // Define quality map early - simplified format selection for better compatibility
     const qualityMap: Record<string, string> = {
-      '1080p': 'bestvideo[height<=1080][vcodec^=avc1][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]/best',
-      '720p': 'bestvideo[height<=720][vcodec^=avc1][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best',
-      '360p': 'bestvideo[height<=360][vcodec^=avc1][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360][ext=mp4]/best',
+      '1080p': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]',
+      '720p': 'bestvideo[height<=720]+bestaudio/best[height<=720]',
+      '360p': 'bestvideo[height<=360]+bestaudio/best[height<=360]',
     };
 
     // Additional URL validation
@@ -138,7 +138,6 @@ export async function POST(request: NextRequest) {
         '--no-warnings',
         '-f', formatString,
         '--merge-output-format', 'mp4',
-        '--recode-video', 'mp4',
         '-o', '-',
         url
       ];
@@ -238,7 +237,16 @@ export async function POST(request: NextRequest) {
       
       // Build the format string - prioritize H.264 for compatibility
       let formatString;
-      if (formatId) {
+      if (formatId && platform === 'youtube') {
+        // For YouTube, if a format ID is provided, ensure we also get audio
+        // Check if it's already a combined format (contains +)
+        if (formatId.includes('+')) {
+          formatString = formatId;
+        } else {
+          // Single format ID, likely video-only, add best audio
+          formatString = `${formatId}+bestaudio/best`;
+        }
+      } else if (formatId) {
         formatString = formatId;
       } else if (quality) {
         // Use simple format selection that ensures H.264 codec
@@ -259,9 +267,11 @@ export async function POST(request: NextRequest) {
         if (platform === 'twitter' || platform === 'reddit') {
           formatString = 'best[ext=mp4]/best';
         } else {
-          formatString = 'bestvideo[vcodec^=avc1][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
+          formatString = 'bestvideo+bestaudio/best';
         }
       }
+      
+      console.log(`Format string for ${platform}: ${formatString}`);
       
       // Use yt-dlp to download and merge with proper codec
       const args = [
@@ -270,7 +280,6 @@ export async function POST(request: NextRequest) {
         '--no-playlist',
         '-f', formatString,
         '--merge-output-format', 'mp4',
-        '--recode-video', 'mp4',
         '-o', '-',
         url
       ];
