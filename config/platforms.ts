@@ -23,8 +23,8 @@ export const PLATFORM_CONFIG: Record<Platform, PlatformConfig> = {
     displayName: 'Twitter/X',
     icon: 'Twitter',
     color: '#1DA1F2',
-    supported: false,
-    comingSoon: true,
+    supported: true,
+    comingSoon: false,
   },
   instagram: {
     name: 'instagram',
@@ -47,8 +47,8 @@ export const PLATFORM_CONFIG: Record<Platform, PlatformConfig> = {
     displayName: 'Reddit',
     icon: 'MessageSquare',
     color: '#FF4500',
-    supported: false,
-    comingSoon: true,
+    supported: true,
+    comingSoon: false,
   },
   unknown: {
     name: 'unknown',

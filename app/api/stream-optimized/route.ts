@@ -84,11 +84,11 @@ export async function POST(request: NextRequest) {
 
     // Check if platform is supported
     const platform = detectPlatform(url);
-    if (platform !== 'youtube') {
+    if (platform !== 'youtube' && platform !== 'twitter' && platform !== 'reddit') {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Currently only YouTube downloads are supported' 
+          error: 'Currently only YouTube, Twitter, and Reddit downloads are supported' 
         },
         { status: 400 }
       );

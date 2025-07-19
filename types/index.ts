@@ -7,6 +7,7 @@ export interface VideoInfo {
   author?: string;
   platform: Platform;
   formats?: VideoFormat[];
+  url?: string;
 }
 
 export interface VideoFormat {
@@ -15,6 +16,7 @@ export interface VideoFormat {
   size?: number;
   url?: string;
   formatId?: string;
+  audioUrl?: string;
 }
 
 export interface DownloadProgress {

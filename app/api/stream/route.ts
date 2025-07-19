@@ -5,6 +5,7 @@ import { promisify } from 'util';
 import { isValidUrl } from '@/utils/platform-detector';
 import { detectPlatform } from '@/utils/platform-detector';
 import { sanitizeFilename } from '@/utils/filename-sanitizer';
+import { extractVideoInfo } from '@/services/video-extractor';
 
 const execAsync = promisify(exec);
 
@@ -22,6 +23,8 @@ const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Stream API called');
+    
     // Get client IP for rate limiting
     const clientIp = request.headers.get('x-forwarded-for') || 
                      request.headers.get('x-real-ip') || 
@@ -54,9 +57,12 @@ export async function POST(request: NextRequest) {
 
     // Parse and validate request body
     const body = await request.json();
+    console.log('Request body:', body);
+    
     const validationResult = streamSchema.safeParse(body);
     
     if (!validationResult.success) {
+      console.log('Validation failed:', validationResult.error.issues);
       return NextResponse.json(
         { 
           success: false, 
@@ -89,36 +95,122 @@ export async function POST(request: NextRequest) {
 
     // Check if platform is supported
     const platform = detectPlatform(url);
-    if (platform !== 'youtube') {
+    console.log('Detected platform:', platform);
+    
+    if (platform === 'unknown') {
       return NextResponse.json(
         { 
           success: false, 
-          error: 'Currently only YouTube downloads are supported' 
+          error: 'Unsupported platform. Please use a YouTube, Twitter, or Reddit video URL.' 
+        },
+        { status: 400 }
+      );
+    }
+    
+    if (platform !== 'youtube' && platform !== 'twitter' && platform !== 'reddit') {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Currently only YouTube, Twitter, and Reddit downloads are supported' 
         },
         { status: 400 }
       );
     }
 
     // First, get video info to extract title for filename
-    const infoCommand = `python -m yt_dlp --no-warnings --no-playlist --dump-json "${url}"`;
-    
     let videoInfo;
-    try {
-      const { stdout: infoOutput } = await execAsync(infoCommand);
-      videoInfo = JSON.parse(infoOutput);
-    } catch (error) {
-      console.error('Failed to get video info:', error);
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Failed to retrieve video information. The video might be unavailable or private.' 
-        },
-        { status: 404 }
-      );
+    let videoTitle = 'video';
+    
+    // For Reddit, we can now use yt-dlp to handle merging automatically
+    if (platform === 'reddit') {
+      // For reddit, we'll use a simpler format selection
+      const redditQualityMap: Record<string, string> = {
+        '1080p': 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        '720p': 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        '480p': 'bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        '360p': 'bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+      };
+      const formatString = quality ? redditQualityMap[quality] || redditQualityMap['720p'] : 'best[ext=mp4]/best';
+      
+      // Use yt-dlp to handle the download and merge
+      const args = [
+        '-m', 'yt_dlp',
+        '--no-warnings',
+        '-f', formatString,
+        '--merge-output-format', 'mp4',
+        '--recode-video', 'mp4',
+        '-o', '-',
+        url
+      ];
+      
+      const { spawn } = require('child_process');
+      const ytdlpProcess = spawn('python', args, {
+        windowsHide: true
+      });
+      
+      let videoTitle = 'video';
+      try {
+        const extractedInfo = await extractVideoInfo(url);
+        videoTitle = extractedInfo.title;
+      } catch (e) {
+        console.error('Could not extract video title for Reddit, using default');
+      }
+
+      const baseFilename = sanitizeFilename(videoTitle);
+      const qualityLabel = quality || 'best';
+      const filename = `${baseFilename}_${qualityLabel}.mp4`;
+      
+      const headers = new Headers({
+        'Content-Type': 'video/mp4',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-cache',
+        'Transfer-Encoding': 'chunked'
+      });
+      
+      const stream = new ReadableStream({
+        start(controller) {
+          ytdlpProcess.stdout.on('data', (chunk: Buffer) => {
+            controller.enqueue(chunk);
+          });
+          
+          ytdlpProcess.stdout.on('end', () => {
+            controller.close();
+          });
+          
+          ytdlpProcess.on('error', (error: Error) => {
+            controller.error(error);
+          });
+        }
+      });
+      
+      return new NextResponse(stream, {
+        status: 200,
+        headers,
+      });
+    } else {
+    }
+    
+    // For non-Reddit platforms (YouTube and Twitter), continue with yt-dlp
+    if (platform === 'youtube' || platform === 'twitter') {
+      const infoCommand = `python -m yt_dlp --no-warnings --no-playlist --dump-json "${url}"`;
+      try {
+        const { stdout: infoOutput } = await execAsync(infoCommand);
+        videoInfo = JSON.parse(infoOutput);
+        videoTitle = videoInfo.title || 'video';
+      } catch (error) {
+        console.error('Failed to get video info:', error);
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'Failed to retrieve video information. The video might be unavailable or private.' 
+          },
+          { status: 404 }
+        );
+      }
     }
 
     // Generate filename
-    const baseFilename = sanitizeFilename(videoInfo.title || 'video');
+    const baseFilename = sanitizeFilename(videoTitle);
     const qualityLabel = quality || formatId || '720p';
     const filename = `${baseFilename}_${qualityLabel}.mp4`;
 
@@ -150,10 +242,25 @@ export async function POST(request: NextRequest) {
         formatString = formatId;
       } else if (quality) {
         // Use simple format selection that ensures H.264 codec
-        formatString = qualityMap[quality] || qualityMap['720p'];
+        // For Twitter and Reddit, use simpler format selection
+        if (platform === 'twitter' || platform === 'reddit') {
+          const simpleQualityMap: Record<string, string> = {
+            '1080p': 'best[height<=1080][ext=mp4]/best[ext=mp4]/best',
+            '720p': 'best[height<=720][ext=mp4]/best[ext=mp4]/best',
+            '480p': 'best[height<=480][ext=mp4]/best[ext=mp4]/best',
+            '360p': 'best[height<=360][ext=mp4]/best[ext=mp4]/best',
+          };
+          formatString = simpleQualityMap[quality] || simpleQualityMap['720p'];
+        } else {
+          formatString = qualityMap[quality] || qualityMap['720p'];
+        }
       } else {
         // Default to best H.264 format
-        formatString = 'bestvideo[vcodec^=avc1][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
+        if (platform === 'twitter' || platform === 'reddit') {
+          formatString = 'best[ext=mp4]/best';
+        } else {
+          formatString = 'bestvideo[vcodec^=avc1][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best';
+        }
       }
       
       // Use yt-dlp to download and merge with proper codec

@@ -10,6 +10,7 @@ import { useVideoDownload } from "@/hooks/use-video-download";
 import { useVideoStreamDownload } from "@/hooks/use-video-stream-download";
 import { Platform, VideoFormat } from "@/types";
 import { cn } from "@/lib/utils";
+import { detectPlatform } from "@/utils/platform-detector";
 
 export function VideoDownloader() {
   const [isClient, setIsClient] = React.useState(false);
@@ -43,6 +44,14 @@ export function VideoDownloader() {
 
   const handleDownload = async () => {
     if (!url) return;
+    
+    // Validate URL matches selected platform
+    const detectedPlatform = detectPlatform(url);
+    if (detectedPlatform !== selectedPlatform && detectedPlatform !== 'unknown') {
+      setDownloadError(`URL does not match selected platform. Expected ${selectedPlatform} URL but got ${detectedPlatform} URL.`);
+      return;
+    }
+    
     await downloadVideo(url);
   };
 
@@ -50,6 +59,15 @@ export function VideoDownloader() {
     setUrl(newUrl);
     if (!newUrl) {
       reset();
+      setDownloadError(null); // Clear error when URL is cleared
+      return;
+    }
+    // Validate URL against selected platform
+    const platform = detectPlatform(newUrl);
+    if (platform !== selectedPlatform && platform !== 'unknown') {
+      setDownloadError(`Selected platform does not match URL. Please provide a valid ${selectedPlatform} URL.`);
+    } else {
+      setDownloadError(null);
     }
   };
 
@@ -97,6 +115,7 @@ export function VideoDownloader() {
               value={url}
               onChange={handleUrlChange}
               onPlatformDetected={handlePlatformDetected}
+              selectedPlatform={selectedPlatform}
               disabled={isLoading}
             />
           </div>
@@ -109,7 +128,7 @@ export function VideoDownloader() {
               onClick={handleDownload}
               isLoading={isLoading}
               isSuccess={!!videoInfo && !isLoading}
-              disabled={!url || !!error}
+              disabled={!url || !!error || !!downloadError}
               size="lg"
             />
           </div>
@@ -125,7 +144,7 @@ export function VideoDownloader() {
                 <p className="text-sm text-red-400">{error || downloadError}</p>
                 {error && error.includes('coming soon') && (
                   <p className="text-xs text-gray-400 mt-2">
-                    Currently, only YouTube videos are supported. More platforms coming soon!
+                    Currently, YouTube and Twitter videos are supported. More platforms coming soon!
                   </p>
                 )}
               </div>

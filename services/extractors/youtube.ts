@@ -77,7 +77,8 @@ export async function extractYouTubeVideo(url: string): Promise<VideoInfo> {
       thumbnail: info.video_details.thumbnails[info.video_details.thumbnails.length - 1]?.url,
       author: info.video_details.channel?.name || '',
       platform: 'youtube',
-      formats
+      formats,
+      url
     };
   } catch (error) {
     console.error('Error extracting YouTube video:', error);

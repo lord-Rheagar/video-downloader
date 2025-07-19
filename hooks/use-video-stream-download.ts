@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { VideoFormat } from '@/types';
+import { detectPlatform } from '@/utils/platform-detector';
 
 interface UseVideoStreamDownloadProps {
   url: string;
@@ -28,7 +29,7 @@ export function useVideoStreamDownload({ url, onError, onSuccess, onProgress }: 
       };
 
       // Try main endpoint first
-      let response = await fetch('/api/stream-hybrid', {
+      let response = await fetch('/api/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,32 +37,37 @@ export function useVideoStreamDownload({ url, onError, onSuccess, onProgress }: 
         body: JSON.stringify(requestBody),
       });
 
-      // If main endpoint fails with 403/404, try fallback
-      if (!response.ok && (response.status === 403 || response.status === 404)) {
-        console.log('Main endpoint failed, trying fallback...');
-        onProgress?.('Trying alternative download method...');
-        
-        response = await fetch('/api/stream-fallback', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        });
-      }
+      // Only try fallback endpoints for YouTube videos
+      const platform = detectPlatform(url);
+      
+      if (platform === 'youtube') {
+        // If main endpoint fails with 403/404, try fallback
+        if (!response.ok && (response.status === 403 || response.status === 404)) {
+          console.log('Main endpoint failed, trying fallback...');
+          onProgress?.('Trying alternative download method...');
+          
+          response = await fetch('/api/stream-fallback', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          });
+        }
 
-      // If fallback also fails, try direct-download
-      if (!response.ok) {
-        console.log('Fallback failed, trying direct-download...');
-        onProgress?.('Attempting direct-download method...');
+        // If fallback also fails, try direct-download
+        if (!response.ok) {
+          console.log('Fallback failed, trying direct-download...');
+          onProgress?.('Attempting direct-download method...');
 
-        response = await fetch('/api/direct-download', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        });
+          response = await fetch('/api/direct-download', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody),
+          });
+        }
       }
 
       if (!response.ok) {

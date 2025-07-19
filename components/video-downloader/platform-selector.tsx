@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronDown, Globe, Youtube } from "lucide-react";
+import { Check, ChevronDown, Globe, Youtube, Twitter, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Platform } from "@/types";
@@ -14,10 +14,10 @@ interface PlatformSelectorProps {
 
 const platformIcons: Record<Platform, React.ElementType> = {
   youtube: Youtube,
-  twitter: Globe, // X/Twitter icon
+  twitter: Twitter, // X/Twitter icon
   instagram: Globe, // Instagram icon
   facebook: Globe, // Facebook icon
-  reddit: Globe, // Reddit icon
+  reddit: MessageSquare, // Reddit icon
   unknown: Globe,
 };
 

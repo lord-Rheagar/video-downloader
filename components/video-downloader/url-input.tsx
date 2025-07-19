@@ -14,6 +14,7 @@ interface UrlInputProps {
   onPlatformDetected?: (platform: Platform) => void;
   placeholder?: string;
   disabled?: boolean;
+  selectedPlatform?: Platform;
 }
 
 const platformPlaceholders: Record<Platform, string> = {
@@ -31,6 +32,7 @@ export function UrlInput({
   onPlatformDetected,
   placeholder,
   disabled = false,
+  selectedPlatform = 'unknown',
 }: UrlInputProps) {
   const [isFocused, setIsFocused] = React.useState(false);
   const [validationState, setValidationState] = React.useState<"idle" | "valid" | "invalid">("idle");
@@ -67,12 +69,16 @@ export function UrlInput({
 
   const dynamicPlaceholder = React.useMemo(() => {
     if (placeholder) return placeholder;
+    // Use selected platform for placeholder if no URL entered
+    if (!value && selectedPlatform !== 'unknown') {
+      return platformPlaceholders[selectedPlatform];
+    }
     if (value) {
       const platform = detectPlatform(value);
       return platformPlaceholders[platform];
     }
     return platformPlaceholders.unknown;
-  }, [value, placeholder]);
+  }, [value, placeholder, selectedPlatform]);
 
   return (
     <div className="relative w-full">
