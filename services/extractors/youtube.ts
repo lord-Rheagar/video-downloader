@@ -20,6 +20,8 @@ export async function extractYouTubeVideo(url: string): Promise<VideoInfo> {
     const allowedQualities = ['360p', '720p', '1080p'];
     
     // First, add hardcoded options to ensure they're always available
+    // Note: format 22 (720p) and 18 (360p) include both video and audio
+    // For 1080p, we need to combine video (137) with audio (140)
     const hardcodedFormats: VideoFormat[] = [
       { quality: '1080p', format: 'mp4', formatId: '137+140' },
       { quality: '720p', format: 'mp4', formatId: '22' },
