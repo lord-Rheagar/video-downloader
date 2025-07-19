@@ -1,6 +1,8 @@
 import { VideoInfo, Platform } from '@/types';
 import { detectPlatform, isValidUrl } from '@/utils/platform-detector';
 import { extractYouTubeVideo } from './extractors/youtube';
+import { extractTwitterVideo } from './extractors/twitter';
+import { extractRedditVideo } from './extractors/reddit';
 import { PLATFORM_CONFIG } from '@/config/platforms';
 
 export async function extractVideoInfo(url: string): Promise<VideoInfo> {
@@ -15,7 +17,7 @@ export async function extractVideoInfo(url: string): Promise<VideoInfo> {
   // Check if platform is supported
   if (!platformConfig.supported) {
     if (platformConfig.comingSoon) {
-      throw new Error(`${platformConfig.displayName} support is coming soon! Currently, only YouTube is supported.`);
+      throw new Error(`${platformConfig.displayName} support is coming soon! Currently, YouTube, Twitter, and Reddit are supported.`);
     } else if (platform === 'unknown') {
       throw new Error('This URL is not from a supported video platform. Please use a YouTube, Twitter, Instagram, Facebook, or Reddit video URL.');
     }
@@ -27,9 +29,13 @@ export async function extractVideoInfo(url: string): Promise<VideoInfo> {
         return await extractYouTubeVideo(url);
       
       case 'twitter':
+        return await extractTwitterVideo(url);
+      
+      case 'reddit':
+        return await extractRedditVideo(url);
+        
       case 'instagram':
       case 'facebook':
-      case 'reddit':
         // This should not be reached due to the check above
         throw new Error(`${platformConfig.displayName} support is coming soon!`);
       

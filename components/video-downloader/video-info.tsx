@@ -81,12 +81,12 @@ export function VideoInfo({ videoInfo, onDownload, isDownloading = false, showAl
 
   return (
     <div className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 w-full max-w-5xl mx-auto">
-      <div className="bg-gray-950/95 backdrop-blur-sm rounded-3xl p-8">
+      <div className="bg-gray-950/95 backdrop-blur-sm rounded-3xl p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Left side - Thumbnail and info */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 w-full lg:w-auto">
             {/* Thumbnail with platform badge */}
-            <div className="relative rounded-xl overflow-hidden bg-gray-900 w-80">
+            <div className="relative rounded-xl overflow-hidden bg-gray-900 w-full lg:w-80">
               <div className="aspect-video relative">
                 {videoInfo.thumbnail ? (
                   <img
@@ -119,8 +119,8 @@ export function VideoInfo({ videoInfo, onDownload, isDownloading = false, showAl
             </div>
             
             {/* Title and Duration */}
-            <div className="mt-4 px-1">
-              <h3 className="text-white font-semibold text-lg leading-tight line-clamp-2">
+            <div className="mt-4 px-1 w-full lg:w-80">
+              <h3 className="text-white font-semibold text-lg leading-tight line-clamp-2 break-words">
                 {videoInfo.title}
               </h3>
               {videoInfo.duration && (
@@ -137,27 +137,27 @@ export function VideoInfo({ videoInfo, onDownload, isDownloading = false, showAl
               {/* Single format display with icon and checkmark */}
               {selectedFormat && (
                 <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-5 border border-gray-700/50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-4 min-w-0">
                       {/* Video format icon */}
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0">
                         <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
                         </svg>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-white font-semibold text-base">
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-white font-semibold text-base whitespace-nowrap">
                           MP4 {selectedFormat.quality}
                         </span>
                       </div>
                     </div>
                     
                     {/* File size and checkmark */}
-                    <div className="flex items-center gap-4">
-                      <span className="text-white font-bold text-lg">
+                    <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                      <span className="text-white font-bold text-base sm:text-lg whitespace-nowrap">
                         {formatFileSize(selectedFormat.size)}
                       </span>
-                      <div className="w-9 h-9 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-full flex items-center justify-center">
+                      <div className="w-9 h-9 bg-gradient-to-br from-blue-500/20 to-purple-600/20 rounded-full flex items-center justify-center flex-shrink-0">
                         <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
@@ -181,9 +181,9 @@ export function VideoInfo({ videoInfo, onDownload, isDownloading = false, showAl
                           : "bg-gray-800/30 border-gray-700/30 hover:bg-gray-800/50 hover:border-gray-600/50"
                       )}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-white font-medium">MP4 {format.quality}</span>
-                        <span className="text-gray-300 font-medium">{formatFileSize(format.size)}</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-white font-medium whitespace-nowrap">MP4 {format.quality}</span>
+                        <span className="text-gray-300 font-medium whitespace-nowrap">{formatFileSize(format.size)}</span>
                       </div>
                     </button>
                   ))}
