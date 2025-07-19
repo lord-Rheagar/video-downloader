@@ -5,11 +5,14 @@ import { Download, Youtube, Twitter, Instagram, Facebook } from "lucide-react";
 import { VideoInfo as VideoInfoType, VideoFormat, Platform } from "@/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AlternativeDownload } from "@/components/AlternativeDownload";
 
 interface VideoInfoProps {
-  videoInfo: VideoInfoType;
+  videoInfo: VideoInfoType | null;
   onDownload: (format?: VideoFormat) => void;
   isDownloading?: boolean;
+  showAlternatives?: boolean;
+  onCloseAlternatives?: () => void;
 }
 
 const platformIcons: Record<Platform, React.ReactNode> = {
@@ -30,7 +33,11 @@ const platformColors: Record<Platform, string> = {
   unknown: "bg-gray-500",
 };
 
-export function VideoInfo({ videoInfo, onDownload, isDownloading = false }: VideoInfoProps) {
+export function VideoInfo({ videoInfo, onDownload, isDownloading = false, showAlternatives = false, onCloseAlternatives }: VideoInfoProps) {
+  // Early return if videoInfo is not provided
+  if (!videoInfo) {
+    return null;
+  }
   const [selectedFormat, setSelectedFormat] = React.useState<VideoFormat | undefined>(
     videoInfo.formats?.[0]
   );
@@ -52,6 +59,25 @@ export function VideoInfo({ videoInfo, onDownload, isDownloading = false }: Vide
     }
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Show alternative download methods if blocked
+  if (showAlternatives) {
+    let videoId: string | undefined;
+    if (videoInfo.url) {
+      const videoIdMatch = videoInfo.url.match(/(?:v=|\/)([\w-]{11})/);
+      videoId = videoIdMatch ? videoIdMatch[1] : undefined;
+    }
+    
+    return (
+      <div className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 w-full max-w-5xl mx-auto">
+        <AlternativeDownload 
+          videoId={videoId}
+          quality={selectedFormat?.quality}
+          onClose={onCloseAlternatives}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 w-full max-w-5xl mx-auto">
@@ -175,7 +201,7 @@ export function VideoInfo({ videoInfo, onDownload, isDownloading = false }: Vide
                 {isDownloading ? (
                   <>
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Downloading...
+                    Preparing download...
                   </>
                 ) : (
                   "Download"

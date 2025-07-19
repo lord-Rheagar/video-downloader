@@ -1,5 +1,12 @@
 import play from 'play-dl';
 import { VideoInfo, VideoFormat } from '@/types';
+import { PROXY_CONFIG } from '@/config/proxy';
+
+if (PROXY_CONFIG.useProxy && PROXY_CONFIG.proxyUrl) {
+  play.setToken({
+    proxy: [PROXY_CONFIG.proxyUrl]
+  });
+}
 
 export async function extractYouTubeVideo(url: string): Promise<VideoInfo> {
   if (!url) {
@@ -12,32 +19,46 @@ export async function extractYouTubeVideo(url: string): Promise<VideoInfo> {
     // Filter for only 360p, 720p, and 1080p MP4 formats
     const allowedQualities = ['360p', '720p', '1080p'];
     
-    // First, filter and map all valid formats
+    // First, add hardcoded options to ensure they're always available
+    const hardcodedFormats: VideoFormat[] = [
+      { quality: '1080p', format: 'mp4', formatId: '137+140' },
+      { quality: '720p', format: 'mp4', formatId: '22' },
+      { quality: '360p', format: 'mp4', formatId: '18' }
+    ];
+    
+    // Then filter actual formats from the video
     const allFormats = info.format
       .filter(format => {
-        // Check if it has a quality label and is MP4
+        // Check if it has a quality label
         if (!format.qualityLabel || !format.mimeType) return false;
         
         // Check if it's an allowed quality
         if (!allowedQualities.includes(format.qualityLabel)) return false;
         
-        // Check if it's MP4 format
-        const mimeType = format.mimeType.toLowerCase();
-        return mimeType.includes('video/mp4');
+        // Include any video format with our target qualities
+        return true;
       })
       .map(format => ({
         quality: format.qualityLabel || 'unknown',
         format: 'mp4',
         size: format.contentLength ? parseInt(format.contentLength) : undefined,
-        url: format.url || ''
+        url: format.url || '',
+        formatId: format.itag?.toString() || undefined
       }));
     
     // Remove duplicates by keeping only one format per quality level
     const uniqueFormats = new Map<string, VideoFormat>();
+    
+    // First add hardcoded formats as defaults
+    hardcodedFormats.forEach(format => {
+      uniqueFormats.set(format.quality, format);
+    });
+    
+    // Then override with actual formats if available
     allFormats.forEach(format => {
       const existing = uniqueFormats.get(format.quality);
-      // Keep the format with the larger file size (usually better quality)
-      if (!existing || (format.size && existing.size && format.size > existing.size)) {
+      // Keep the format with actual data from the video
+      if (!existing || format.formatId) {
         uniqueFormats.set(format.quality, format);
       }
     });
