@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "setup": "node scripts/setup-yt-dlp.js",
-    "postinstall": "node scripts/setup-yt-dlp.js"
+    "postinstall": "node -e \"if (!process.env.VERCEL) require('./scripts/setup-yt-dlp.js')\""
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.7",
