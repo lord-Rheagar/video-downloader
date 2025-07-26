@@ -179,12 +179,11 @@ export async function extractRedditVideo(url: string): Promise<VideoInfo> {
     const formats = await extractVideoQualities(redditVideo);
     
     // Check if audio exists (for videos that need audio merged)
-    let audioUrl: string | null = null;
     if (redditVideo.has_audio) {
-      audioUrl = await getRedditAudioUrl(redditVideo.fallback_url);
+      const audioUrl = await getRedditAudioUrl(redditVideo.fallback_url);
       if (audioUrl) {
         formats.forEach(format => {
-          format.audioUrl = audioUrl;
+          format.audioUrl = audioUrl ?? undefined;
         });
       }
     }
