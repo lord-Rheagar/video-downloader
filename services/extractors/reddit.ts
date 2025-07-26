@@ -149,7 +149,7 @@ export async function extractRedditVideo(url: string): Promise<VideoInfo> {
       throw new Error('Failed to fetch Reddit metadata');
     }
 
-    const data = await response.json();
+    const data = await response.json() as any[];
     const postData: RedditPost = data[0]?.data?.children[0]?.data;
 
     if (!postData) {
