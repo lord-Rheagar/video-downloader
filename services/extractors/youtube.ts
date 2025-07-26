@@ -19,56 +19,34 @@ export async function extractYouTubeVideo(url: string): Promise<VideoInfo> {
     // Filter for only 360p, 720p, and 1080p MP4 formats
     const allowedQualities = ['360p', '720p', '1080p'];
     
-    // First, add hardcoded options to ensure they're always available
-    // Note: format 22 (720p) and 18 (360p) include both video and audio
-    // For 1080p, we need to combine video (137) with audio (140)
-    const hardcodedFormats: VideoFormat[] = [
-      { quality: '1080p', format: 'mp4', formatId: '137+140' },
-      { quality: '720p', format: 'mp4', formatId: '22' },
-      { quality: '360p', format: 'mp4', formatId: '18' }
+    // Use only H.264 compatible formats for Windows Media Player
+    // These are the ONLY formats we should offer to ensure compatibility
+    const windowsCompatibleFormats: VideoFormat[] = [
+      { quality: '1080p', format: 'mp4', formatId: '137+140', size: info.format.find(f => f.itag === 137)?.contentLength ? parseInt(info.format.find(f => f.itag === 137)!.contentLength!) : undefined },
+      { quality: '720p', format: 'mp4', formatId: '22', size: info.format.find(f => f.itag === 22)?.contentLength ? parseInt(info.format.find(f => f.itag === 22)!.contentLength!) : undefined },
+      { quality: '480p', format: 'mp4', formatId: '135+140', size: info.format.find(f => f.itag === 135)?.contentLength ? parseInt(info.format.find(f => f.itag === 135)!.contentLength!) : undefined },
+      { quality: '360p', format: 'mp4', formatId: '18', size: info.format.find(f => f.itag === 18)?.contentLength ? parseInt(info.format.find(f => f.itag === 18)!.contentLength!) : undefined }
     ];
     
-    // Then filter actual formats from the video
-    const allFormats = info.format
+    // Filter out formats that don't exist for this video
+    const formats: VideoFormat[] = windowsCompatibleFormats
       .filter(format => {
-        // Check if it has a quality label
-        if (!format.qualityLabel || !format.mimeType) return false;
-        
-        // Check if it's an allowed quality
-        if (!allowedQualities.includes(format.qualityLabel)) return false;
-        
-        // Include any video format with our target qualities
-        return true;
+        // For pre-muxed formats (22, 18), check if they exist
+        if (format.formatId === '22') {
+          return info.format.some(f => f.itag === 22);
+        } else if (format.formatId === '18') {
+          return info.format.some(f => f.itag === 18);
+        }
+        // For separate formats, check if the video format exists (audio 140 is usually available)
+        else if (format.formatId === '137+140') {
+          return info.format.some(f => f.itag === 137);
+        } else if (format.formatId === '135+140') {
+          return info.format.some(f => f.itag === 135);
+        }
+        return false;
       })
-      .map(format => ({
-        quality: format.qualityLabel || 'unknown',
-        format: 'mp4',
-        size: format.contentLength ? parseInt(format.contentLength) : undefined,
-        url: format.url || '',
-        formatId: format.itag?.toString() || undefined
-      }));
-    
-    // Remove duplicates by keeping only one format per quality level
-    const uniqueFormats = new Map<string, VideoFormat>();
-    
-    // First add hardcoded formats as defaults
-    hardcodedFormats.forEach(format => {
-      uniqueFormats.set(format.quality, format);
-    });
-    
-    // Then override with actual formats if available
-    allFormats.forEach(format => {
-      const existing = uniqueFormats.get(format.quality);
-      // Keep the format with actual data from the video
-      if (!existing || format.formatId) {
-        uniqueFormats.set(format.quality, format);
-      }
-    });
-    
-    // Convert back to array and sort
-    const formats: VideoFormat[] = Array.from(uniqueFormats.values())
       .sort((a, b) => {
-        const qualityOrder = { '1080p': 0, '720p': 1, '360p': 2 };
+        const qualityOrder = { '1080p': 0, '720p': 1, '480p': 2, '360p': 3 };
         return (qualityOrder[a.quality as keyof typeof qualityOrder] || 999) - 
                (qualityOrder[b.quality as keyof typeof qualityOrder] || 999);
       });
