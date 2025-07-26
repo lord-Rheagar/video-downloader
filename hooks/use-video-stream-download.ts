@@ -28,22 +28,54 @@ export function useVideoStreamDownload({ url, onError, onSuccess, onProgress }: 
         formatId: format?.formatId,
       };
 
-      // Try main endpoint first
-      let response = await fetch('/api/stream', {
+      // Detect platform
+      const platform = detectPlatform(url);
+      
+      // Try Windows-compatible download endpoint first
+      let response = await fetch('/api/download-windows', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          url,
+          quality: format?.quality || '720p'
+        }),
       });
 
-      // Only try fallback endpoints for YouTube videos
-      const platform = detectPlatform(url);
+      // If simple download fails, try download-file endpoint
+      if (!response.ok) {
+        console.log('Simple download failed, trying download-file endpoint...');
+        onProgress?.('Trying alternative download method...');
+        
+        response = await fetch('/api/download-file', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+      }
       
-      if (platform === 'youtube') {
-        // If main endpoint fails with 403/404, try fallback
-        if (!response.ok && (response.status === 403 || response.status === 404)) {
-          console.log('Main endpoint failed, trying fallback...');
+      // If download-file fails, try streaming endpoint
+      if (!response.ok) {
+        console.log('Download-file endpoint failed, trying stream endpoint...');
+        onProgress?.('Trying streaming download method...');
+        
+        response = await fetch('/api/stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+      }
+
+      // Only try additional fallback endpoints for YouTube videos
+      if (platform === 'youtube' && !response.ok) {
+        // If stream endpoint fails with 403/404, try fallback
+        if (response.status === 403 || response.status === 404) {
+          console.log('Stream endpoint failed, trying fallback...');
           onProgress?.('Trying alternative download method...');
           
           response = await fetch('/api/stream-fallback', {

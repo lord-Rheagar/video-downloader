@@ -4,7 +4,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { isValidUrl } from '@/utils/platform-detector';
 import { detectPlatform } from '@/utils/platform-detector';
-import { sanitizeFilename } from '@/utils/filename-sanitizer';
+import { sanitizeFilename, sanitizeFilenameForHeaders } from '@/utils/filename-sanitizer';
 import { extractVideoInfo } from '@/services/video-extractor';
 
 const execAsync = promisify(exec);
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
         console.error('Could not extract video title for Reddit, using default');
       }
 
-      const baseFilename = sanitizeFilename(videoTitle);
+      const baseFilename = sanitizeFilenameForHeaders(videoTitle);
       const qualityLabel = quality || 'best';
       const filename = `${baseFilename}_${qualityLabel}.mp4`;
       
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate filename
-    const baseFilename = sanitizeFilename(videoTitle);
+    const baseFilename = sanitizeFilenameForHeaders(videoTitle);
     const qualityLabel = quality || formatId || '720p';
     const filename = `${baseFilename}_${qualityLabel}.mp4`;
 
@@ -249,9 +249,17 @@ export async function POST(request: NextRequest) {
       } else if (formatId) {
         formatString = formatId;
       } else if (quality) {
-        // Use simple format selection that ensures H.264 codec
-        // For Twitter and Reddit, use simpler format selection
-        if (platform === 'twitter' || platform === 'reddit') {
+        // Use format selection that ensures H.264 codec with AAC audio for compatibility
+        if (platform === 'youtube') {
+          // For YouTube, prefer H.264 video with AAC audio (not Opus)
+          const h264QualityMap: Record<string, string> = {
+            '1080p': '137+140/22/bestvideo[height<=1080][vcodec^=avc]+140/bestvideo[height<=1080]+bestaudio[acodec^=mp4a]/best[height<=1080]',
+            '720p': '22/136+140/bestvideo[height<=720][vcodec^=avc]+140/bestvideo[height<=720]+bestaudio[acodec^=mp4a]/best[height<=720]',
+            '480p': '135+140/bestvideo[height<=480][vcodec^=avc]+140/bestvideo[height<=480]+bestaudio[acodec^=mp4a]/best[height<=480]',
+            '360p': '18/134+140/bestvideo[height<=360][vcodec^=avc]+140/bestvideo[height<=360]+bestaudio[acodec^=mp4a]/best[height<=360]',
+          };
+          formatString = h264QualityMap[quality] || h264QualityMap['720p'];
+        } else if (platform === 'twitter' || platform === 'reddit') {
           const simpleQualityMap: Record<string, string> = {
             '1080p': 'best[height<=1080][ext=mp4]/best[ext=mp4]/best',
             '720p': 'best[height<=720][ext=mp4]/best[ext=mp4]/best',
@@ -263,8 +271,10 @@ export async function POST(request: NextRequest) {
           formatString = qualityMap[quality] || qualityMap['720p'];
         }
       } else {
-        // Default to best H.264 format
-        if (platform === 'twitter' || platform === 'reddit') {
+        // Default to best H.264 format with AAC audio for compatibility
+        if (platform === 'youtube') {
+          formatString = '22/bestvideo[vcodec^=avc]+140/bestvideo+bestaudio[acodec^=mp4a]/best';
+        } else if (platform === 'twitter' || platform === 'reddit') {
           formatString = 'best[ext=mp4]/best';
         } else {
           formatString = 'bestvideo+bestaudio/best';
@@ -280,6 +290,7 @@ export async function POST(request: NextRequest) {
         '--no-playlist',
         '-f', formatString,
         '--merge-output-format', 'mp4',
+        '--audio-format', 'aac',  // Convert audio to AAC if needed
         '-o', '-',
         url
       ];

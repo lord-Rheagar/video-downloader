@@ -31,6 +31,31 @@ export function sanitizeFilename(filename: string): string {
 }
 
 /**
+ * Sanitize a filename for use in HTTP headers (ASCII-only)
+ */
+export function sanitizeFilenameForHeaders(filename: string): string {
+  // First apply regular sanitization
+  let sanitized = sanitizeFilename(filename);
+  
+  // Remove any non-ASCII characters (including emojis) for HTTP header compatibility
+  // Replace non-ASCII characters with underscore
+  sanitized = sanitized.replace(/[^\x00-\x7F]/g, '_');
+  
+  // Clean up any multiple underscores that may have been created
+  sanitized = sanitized.replace(/_+/g, '_');
+  
+  // Remove any remaining trailing underscore
+  sanitized = sanitized.replace(/_+$/, '');
+  
+  // If filename is empty after sanitization, use a default
+  if (!sanitized) {
+    sanitized = 'download';
+  }
+  
+  return sanitized;
+}
+
+/**
  * Get a safe filename with timestamp if needed
  */
 export function getSafeFilename(
