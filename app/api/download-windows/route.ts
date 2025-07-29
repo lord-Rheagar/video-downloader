@@ -87,13 +87,19 @@ export async function POST(request: NextRequest) {
       // For Reddit, use bestvideo+bestaudio to ensure we get both streams
       downloadCommand += ` -f "bestvideo+bestaudio/best"`;
     } else {
-      downloadCommand += ` -f "best"`;
+      // For Twitter, try to get MP4 format directly
+      downloadCommand += ` -f "best[ext=mp4]/best"`;
     }
     
     downloadCommand += ` -o "${tempFileOriginal}" "${url}"`;
     
     console.log('Step 1: Downloading video...');
-    await execAsync(downloadCommand, { maxBuffer: 1024 * 1024 * 100 });
+    console.time('Download time');
+    await execAsync(downloadCommand, { 
+      maxBuffer: 1024 * 1024 * 100,
+      timeout: 60000 // 60 second timeout
+    });
+    console.timeEnd('Download time');
 
     // Step 2: Convert with very specific Windows-compatible settings
     // Optimized for lower memory usage on Railway
@@ -116,12 +122,47 @@ export async function POST(request: NextRequest) {
       `-f mp4 ` +                           // Force MP4 format
       `"${tempFileConverted}" -y`;
 
-    console.log('Step 2: Converting to Windows-compatible format...');
-    await execAsync(ffmpegCommand, { maxBuffer: 1024 * 1024 * 100 });
-
-    // Clean up original file
-    await fs.unlink(tempFileOriginal).catch(() => {});
-    tempFileOriginal = null;
+    // Check if conversion is needed for Twitter videos
+    let skipConversion = false;
+    if (platform === 'twitter') {
+      try {
+        // Quick check if the file is already H.264/AAC
+        const probeCommand = `ffprobe -v quiet -print_format json -show_streams "${tempFileOriginal}"`;
+        const { stdout } = await execAsync(probeCommand, { timeout: 5000 });
+        const probeData = JSON.parse(stdout);
+        
+        let hasH264 = false;
+        let hasAAC = false;
+        
+        for (const stream of probeData.streams || []) {
+          if (stream.codec_name === 'h264') hasH264 = true;
+          if (stream.codec_name === 'aac') hasAAC = true;
+        }
+        
+        skipConversion = hasH264 && hasAAC;
+        console.log(`Video check - H264: ${hasH264}, AAC: ${hasAAC}, Skip conversion: ${skipConversion}`);
+      } catch (e) {
+        console.error('Probe failed, will convert:', e);
+      }
+    }
+    
+    if (skipConversion) {
+      console.log('Skipping conversion - file already compatible');
+      tempFileConverted = tempFileOriginal;
+      tempFileOriginal = null;
+    } else {
+      console.log('Step 2: Converting to Windows-compatible format...');
+      console.time('FFmpeg conversion time');
+      await execAsync(ffmpegCommand, { 
+        maxBuffer: 1024 * 1024 * 100,
+        timeout: 120000 // 120 second timeout for conversion
+      });
+      console.timeEnd('FFmpeg conversion time');
+      
+      // Clean up original file
+      await fs.unlink(tempFileOriginal).catch(() => {});
+      tempFileOriginal = null;
+    }
 
     // Read the converted file
     const fileBuffer = await fs.readFile(tempFileConverted);

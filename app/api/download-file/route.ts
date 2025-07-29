@@ -164,32 +164,34 @@ export async function POST(request: NextRequest) {
     let downloadCommand = `python -m yt_dlp --no-playlist`;
     
     // For YouTube, be very specific about format selection to avoid VP9
-    if (platform === 'youtube') {
-      // Use strict format selection - no fallbacks to incompatible formats
-      downloadCommand += ` -f "${formatString}" --no-video-multistreams`;
-      
-      // Force re-encoding to ensure H.264/AAC
-      downloadCommand += ` --recode-video mp4 --postprocessor-args "VideoConvertor:-c:v libx264 -preset fast -crf 23 -c:a aac -b:a 192k"`;
-    } else {
+      if (platform === 'youtube') {
+        // Use strict format selection - no fallbacks to incompatible formats
+        downloadCommand += ` -f "${formatString}" --no-video-multistreams`;
+      } else {
       downloadCommand += ` -f "${formatString}"`;
     }
     
     downloadCommand += ` -o "${tempFile}" "${url}"`;
     
-    console.log('Executing download command...');
+      console.time('Download time');
+      console.log('Executing download command...');
     try {
       await execAsync(downloadCommand, { maxBuffer: 1024 * 1024 * 100 }); // 100MB buffer
     } catch (error) {
+      console.timeEnd('Download time');
       console.error('Download command failed:', error);
       throw new Error('Failed to download video. The format might not be available.');
     }
 
     // Step 2: Verify the downloaded file has proper codecs
+    console.time('Codec verification time');
     const { hasValidCodecs, videoCodec, audioCodec } = await verifyVideoCodecs(tempFile);
+    console.timeEnd('Codec verification time');
     console.log(`Codec verification - Video: ${videoCodec}, Audio: ${audioCodec}, Valid: ${hasValidCodecs}`);
     
     // Step 3: If codecs are not compatible, re-encode with ffmpeg
     if (!hasValidCodecs) {
+      console.time('FFmpeg re-encoding time');
       console.log('Invalid codecs detected, re-encoding with ffmpeg...');
       const tempFileReencoded = path.join(tempDir, `download_${Date.now()}_reencoded.mp4`);
       
@@ -197,7 +199,8 @@ export async function POST(request: NextRequest) {
       const ffmpegCommand = `ffmpeg -i "${tempFile}" -c:v libx264 -preset fast -crf 23 -c:a aac -b:a 192k -movflags +faststart "${tempFileReencoded}" -y`;
       
       try {
-        await execAsync(ffmpegCommand, { maxBuffer: 1024 * 1024 * 100 });
+        await execAsync(ffmpegCommand, { maxBuffer: 1024 * 1024 * 200 });
+        console.timeEnd('FFmpeg re-encoding time');
         
         // Replace original file with re-encoded one
         await fs.unlink(tempFile).catch(() => {});
