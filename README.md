@@ -162,8 +162,6 @@ npm start
 
 #### Other Platforms (Coming Soon)
 - Twitter/X
-- Instagram
-- Facebook
 - Reddit
 
 ## 🔌 API Reference

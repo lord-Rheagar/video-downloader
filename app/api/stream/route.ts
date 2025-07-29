@@ -121,32 +121,12 @@ export async function POST(request: NextRequest) {
     let videoInfo;
     let videoTitle = 'video';
     
-    // For Reddit, we can now use yt-dlp to handle merging automatically
+    // For Reddit, we need to handle the format selection properly
     if (platform === 'reddit') {
-      // For reddit, we'll use a simpler format selection
-      const redditQualityMap: Record<string, string> = {
-        '1080p': 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        '720p': 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        '480p': 'bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-        '360p': 'bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-      };
-      const formatString = quality ? redditQualityMap[quality] || redditQualityMap['720p'] : 'best[ext=mp4]/best';
+      // For reddit, use bestvideo+bestaudio to ensure we get both video and audio
+      const formatString = 'bestvideo+bestaudio/best';
       
-      // Use yt-dlp to handle the download and merge
-      const args = [
-        '-m', 'yt_dlp',
-        '--no-warnings',
-        '-f', formatString,
-        '--merge-output-format', 'mp4',
-        '-o', '-',
-        url
-      ];
-      
-      const { spawn } = require('child_process');
-      const ytdlpProcess = spawn('python', args, {
-        windowsHide: true
-      });
-      
+      // Get video title
       let videoTitle = 'video';
       try {
         const extractedInfo = await extractVideoInfo(url);
@@ -158,6 +138,24 @@ export async function POST(request: NextRequest) {
       const baseFilename = sanitizeFilenameForHeaders(videoTitle);
       const qualityLabel = quality || 'best';
       const filename = `${baseFilename}_${qualityLabel}.mp4`;
+      
+      // Use yt-dlp to handle the download and merge
+      // Update args to ensure web-compatible encoding with correct flags
+      const args = [
+        '-m', 'yt_dlp',
+        '--no-warnings',
+        '-f', formatString,
+        '--merge-output-format', 'mp4',
+        '--recode-video', 'mp4',
+        '--postprocessor-args', "Merger:-c:v libx264 -preset fast -crf 23 -profile:v baseline -level 3.0 -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart",
+        '-o', '-',
+        url
+      ];
+      
+      const { spawn } = require('child_process');
+      const ytdlpProcess = spawn('python', args, {
+        windowsHide: true
+      });
       
       const headers = new Headers({
         'Content-Type': 'video/mp4',
@@ -179,6 +177,13 @@ export async function POST(request: NextRequest) {
           ytdlpProcess.on('error', (error: Error) => {
             controller.error(error);
           });
+          
+          ytdlpProcess.stderr.on('data', (data: Buffer) => {
+            console.error('yt-dlp error:', data.toString());
+          });
+        },
+        cancel() {
+          ytdlpProcess.kill();
         }
       });
       
@@ -186,7 +191,6 @@ export async function POST(request: NextRequest) {
         status: 200,
         headers,
       });
-    } else {
     }
     
     // For non-Reddit platforms (YouTube and Twitter), continue with yt-dlp

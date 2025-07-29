@@ -13,13 +13,6 @@ export function detectPlatform(url: string): Platform {
       return 'twitter';
     }
     
-    if (hostname.includes('instagram.com')) {
-      return 'instagram';
-    }
-    
-    if (hostname.includes('facebook.com') || hostname.includes('fb.watch')) {
-      return 'facebook';
-    }
     
     if (hostname.includes('reddit.com') || hostname.includes('v.redd.it')) {
       return 'reddit';

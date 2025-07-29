@@ -133,7 +133,7 @@ Common status codes:
 
 1. **Progress Tracking**: WebSocket connection for download progress
 2. **Resume Support**: Partial content/range requests
-3. **Multi-Platform**: Support for Twitter, Instagram, etc.
+3. **Multi-Platform**: Support for Twitter, Reddit, etc.
 4. **CDN Integration**: For better performance
 5. **Database Storage**: For persistent rate limiting
 6. **User Authentication**: For personalized limits

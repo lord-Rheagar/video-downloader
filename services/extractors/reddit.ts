@@ -149,7 +149,7 @@ export async function extractRedditVideo(url: string): Promise<VideoInfo> {
       throw new Error('Failed to fetch Reddit metadata');
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
     const postData: RedditPost = data[0]?.data?.children[0]?.data;
 
     if (!postData) {
@@ -175,18 +175,49 @@ export async function extractRedditVideo(url: string): Promise<VideoInfo> {
       throw new Error('No Reddit-hosted video found in this post');
     }
 
-    // Extract available video qualities
-    const formats = await extractVideoQualities(redditVideo);
-    
-    // Check if audio exists (for videos that need audio merged)
-    let audioUrl: string | null = null;
-    if (redditVideo.has_audio) {
-      audioUrl = await getRedditAudioUrl(redditVideo.fallback_url);
-      if (audioUrl) {
-        formats.forEach(format => {
-          format.audioUrl = audioUrl;
-        });
+    // For Reddit videos, we'll use a simplified approach
+    // Let yt-dlp handle the format selection
+    const formats: VideoFormat[] = [
+      {
+        quality: 'best',
+        format: 'mp4',
+        url: redditVideo.fallback_url,
+        formatId: 'bestvideo+bestaudio/best'
       }
+    ];
+    
+    // If the video height is known, add quality-specific options
+    if (redditVideo.height >= 1080) {
+      formats.unshift({
+        quality: '1080p',
+        format: 'mp4',
+        url: redditVideo.fallback_url,
+        formatId: 'bestvideo[height<=1080]+bestaudio/best[height<=1080]'
+      });
+    }
+    if (redditVideo.height >= 720) {
+      formats.unshift({
+        quality: '720p',
+        format: 'mp4',
+        url: redditVideo.fallback_url,
+        formatId: 'bestvideo[height<=720]+bestaudio/best[height<=720]'
+      });
+    }
+    if (redditVideo.height >= 480) {
+      formats.unshift({
+        quality: '480p',
+        format: 'mp4',
+        url: redditVideo.fallback_url,
+        formatId: 'bestvideo[height<=480]+bestaudio/best[height<=480]'
+      });
+    }
+    if (redditVideo.height >= 360) {
+      formats.unshift({
+        quality: '360p',
+        format: 'mp4',
+        url: redditVideo.fallback_url,
+        formatId: 'bestvideo[height<=360]+bestaudio/best[height<=360]'
+      });
     }
 
     // Get best thumbnail

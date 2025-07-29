@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Video Downloader - Download Videos from YouTube, Twitter, Instagram & More",
-  description: "Free online video downloader for YouTube, Twitter, Instagram, Facebook, and Reddit. Fast, reliable, and easy to use. No registration required.",
-  keywords: "video downloader, youtube downloader, twitter video download, instagram video download, facebook video download, reddit video download",
+title: "Video Downloader - Download Videos from YouTube, Twitter, & More",
+description: "Free online video downloader for YouTube, Twitter, and Reddit. Fast, reliable, and easy to use. No registration required.",
+keywords: "video downloader, youtube downloader, twitter video download, reddit video download",
   authors: [{ name: "Video Downloader" }],
   openGraph: {
     title: "Video Downloader - Multi-Platform Video Downloads",
