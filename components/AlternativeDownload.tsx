@@ -43,11 +43,11 @@ export function AlternativeDownload({ videoId, quality, onClose }: AlternativeDo
         <AlertTriangle className="h-6 w-6 text-yellow-600 flex-shrink-0 mt-0.5" />
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            YouTube is Blocking Automated Downloads
+            YouTube Downloads Coming Soon!
           </h3>
           <p className="text-sm text-gray-600 mt-1">
-            Due to YouTube's anti-bot measures, direct downloads are temporarily unavailable. 
-            Please try one of these alternative methods:
+            YouTube video downloads are coming soon! We're working on bringing you the best 
+            download experience. Stay tuned!
           </p>
         </div>
       </div>

@@ -20,8 +20,6 @@ interface UrlInputProps {
 const platformPlaceholders: Record<Platform, string> = {
   youtube: "https://www.youtube.com/watch?v=...",
   twitter: "https://twitter.com/user/status/...",
-  instagram: "https://www.instagram.com/p/...",
-  facebook: "https://www.facebook.com/watch/?v=...",
   reddit: "https://www.reddit.com/r/.../comments/...",
   unknown: "Paste video URL here...",
 };

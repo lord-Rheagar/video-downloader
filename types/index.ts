@@ -1,4 +1,4 @@
-export type Platform = 'youtube' | 'twitter' | 'instagram' | 'facebook' | 'reddit' | 'unknown';
+export type Platform = 'youtube' | 'twitter' | 'reddit' | 'unknown';
 
 export interface VideoInfo {
   title: string;

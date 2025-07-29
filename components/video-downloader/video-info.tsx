@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Download, Youtube, Twitter, Instagram, Facebook } from "lucide-react";
+import { Download, Youtube, Twitter } from "lucide-react";
 import { VideoInfo as VideoInfoType, VideoFormat, Platform } from "@/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,8 +18,6 @@ interface VideoInfoProps {
 const platformIcons: Record<Platform, React.ReactNode> = {
   youtube: <Youtube className="h-4 w-4" />,
   twitter: <Twitter className="h-4 w-4" />,
-  instagram: <Instagram className="h-4 w-4" />,
-  facebook: <Facebook className="h-4 w-4" />,
   reddit: null,
   unknown: null,
 };
@@ -27,8 +25,6 @@ const platformIcons: Record<Platform, React.ReactNode> = {
 const platformColors: Record<Platform, string> = {
   youtube: "bg-red-500",
   twitter: "bg-blue-400",
-  instagram: "bg-pink-500",
-  facebook: "bg-blue-600",
   reddit: "bg-orange-500",
   unknown: "bg-gray-500",
 };

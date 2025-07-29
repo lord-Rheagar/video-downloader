@@ -15,8 +15,6 @@ interface PlatformSelectorProps {
 const platformIcons: Record<Platform, React.ElementType> = {
   youtube: Youtube,
   twitter: Twitter, // X/Twitter icon
-  instagram: Globe, // Instagram icon
-  facebook: Globe, // Facebook icon
   reddit: MessageSquare, // Reddit icon
   unknown: Globe,
 };

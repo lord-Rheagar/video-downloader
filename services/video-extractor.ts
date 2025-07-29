@@ -17,9 +17,9 @@ export async function extractVideoInfo(url: string): Promise<VideoInfo> {
   // Check if platform is supported
   if (!platformConfig.supported) {
     if (platformConfig.comingSoon) {
-      throw new Error(`${platformConfig.displayName} support is coming soon! Currently, YouTube, Twitter, and Reddit are supported.`);
+      throw new Error(`${platformConfig.displayName} support is coming soon! Currently, Twitter and Reddit are supported.`);
     } else if (platform === 'unknown') {
-      throw new Error('This URL is not from a supported video platform. Please use a YouTube, Twitter, Instagram, Facebook, or Reddit video URL.');
+      throw new Error('This URL is not from a supported video platform. Please use a YouTube, Twitter, or Reddit video URL.');
     }
   }
 
@@ -33,11 +33,6 @@ export async function extractVideoInfo(url: string): Promise<VideoInfo> {
       
       case 'reddit':
         return await extractRedditVideo(url);
-        
-      case 'instagram':
-      case 'facebook':
-        // This should not be reached due to the check above
-        throw new Error(`${platformConfig.displayName} support is coming soon!`);
       
       default:
         throw new Error('Unable to process this video URL');

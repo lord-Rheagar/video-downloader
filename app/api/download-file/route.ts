@@ -141,6 +141,10 @@ export async function POST(request: NextRequest) {
       formatString = getWindowsCompatibleFormat(quality);
       needsConversion = formatString.includes('+');
       console.log(`Selected format string: ${formatString}`);
+    } else if (platform === 'reddit') {
+      // For Reddit, use bestvideo+bestaudio to ensure we get both streams
+      // yt-dlp will automatically merge them
+      formatString = 'bestvideo+bestaudio/best';
     } else {
       // For other platforms, use simple selection
       const simpleQualityMap: Record<string, string> = {

@@ -2,11 +2,12 @@ import play from 'play-dl';
 import { VideoInfo, VideoFormat } from '@/types';
 import { PROXY_CONFIG } from '@/config/proxy';
 
-if (PROXY_CONFIG.useProxy && PROXY_CONFIG.proxyUrl) {
-  play.setToken({
-    proxy: [PROXY_CONFIG.proxyUrl]
-  });
-}
+// Proxy configuration commented out - setToken doesn't support proxy property
+// if (PROXY_CONFIG.useProxy && PROXY_CONFIG.proxyUrl) {
+//   play.setToken({
+//     proxy: [PROXY_CONFIG.proxyUrl]
+//   });
+// }
 
 export async function extractYouTubeVideo(url: string): Promise<VideoInfo> {
   if (!url) {

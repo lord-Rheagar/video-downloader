@@ -83,6 +83,9 @@ export async function POST(request: NextRequest) {
       } else {
         downloadCommand += ` -f "best[height<=720]"`;
       }
+    } else if (platform === 'reddit') {
+      // For Reddit, use bestvideo+bestaudio to ensure we get both streams
+      downloadCommand += ` -f "bestvideo+bestaudio/best"`;
     } else {
       downloadCommand += ` -f "best"`;
     }

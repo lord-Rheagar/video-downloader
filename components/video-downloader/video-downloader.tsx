@@ -11,6 +11,7 @@ import { useVideoStreamDownload } from "@/hooks/use-video-stream-download";
 import { Platform, VideoFormat } from "@/types";
 import { cn } from "@/lib/utils";
 import { detectPlatform } from "@/utils/platform-detector";
+import { PLATFORM_CONFIG } from "@/config/platforms";
 
 export function VideoDownloader() {
   const [isClient, setIsClient] = React.useState(false);
@@ -18,7 +19,7 @@ export function VideoDownloader() {
     setIsClient(true);
   }, []);
   const [url, setUrl] = React.useState("");
-  const [selectedPlatform, setSelectedPlatform] = React.useState<Platform>("youtube");
+  const [selectedPlatform, setSelectedPlatform] = React.useState<Platform>("twitter");
   const [downloadError, setDownloadError] = React.useState<string | null>(null);
   const [showAlternatives, setShowAlternatives] = React.useState(false);
   const { isLoading, error, videoInfo, downloadVideo, reset } = useVideoDownload();
@@ -52,6 +53,12 @@ export function VideoDownloader() {
       return;
     }
     
+    // Check if platform is YouTube and show coming soon message
+    if (detectedPlatform === 'youtube' || selectedPlatform === 'youtube') {
+      setDownloadError('YouTube video downloads are coming soon! We\'re working on bringing you the best download experience.');
+      return;
+    }
+    
     await downloadVideo(url);
   };
 
@@ -64,6 +71,13 @@ export function VideoDownloader() {
     }
     // Validate URL against selected platform
     const platform = detectPlatform(newUrl);
+    
+    // Check if YouTube URL is entered
+    if (platform === 'youtube') {
+      setDownloadError('YouTube video downloads are coming soon! We\'re working on bringing you the best download experience.');
+      return;
+    }
+    
     if (platform !== selectedPlatform && platform !== 'unknown') {
       setDownloadError(`Selected platform does not match URL. Please provide a valid ${selectedPlatform} URL.`);
     } else {
@@ -88,8 +102,8 @@ export function VideoDownloader() {
           </span>
         </h1>
         <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-          Try this unique tool for quick, hassle-free downloads from YouTube, Twitter, Instagram, 
-          Facebook, and Reddit. Transform your offline video collection with this reliable and efficient downloader.
+          Try this unique tool for quick, hassle-free downloads from YouTube, Twitter, and Reddit. 
+          Transform your offline video collection with this reliable and efficient downloader.
         </p>
         
         {/* Copyright Notice */}
@@ -144,7 +158,7 @@ export function VideoDownloader() {
                 <p className="text-sm text-red-400">{error || downloadError}</p>
                 {error && error.includes('coming soon') && (
                   <p className="text-xs text-gray-400 mt-2">
-                    Currently, YouTube and Twitter videos are supported. More platforms coming soon!
+                    Currently, Twitter and Reddit videos are supported. More platforms coming soon!
                   </p>
                 )}
               </div>
@@ -296,7 +310,7 @@ export function VideoDownloader() {
             },
             {
               question: "Which platforms do you support?",
-              answer: "Currently YouTube, Twitter, and Reddit. Instagram and Facebook support coming soon.",
+              answer: "Currently Twitter and Reddit. YouTube support coming soon.",
               icon: "🌐"
             },
             {
