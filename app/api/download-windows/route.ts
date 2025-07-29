@@ -96,15 +96,17 @@ export async function POST(request: NextRequest) {
     await execAsync(downloadCommand, { maxBuffer: 1024 * 1024 * 100 });
 
     // Step 2: Convert with very specific Windows-compatible settings
+    // Optimized for lower memory usage on Railway
     const ffmpegCommand = `ffmpeg -i "${tempFileOriginal}" ` +
       `-c:v libx264 ` +                    // Use H.264 codec
+      `-preset ultrafast ` +                // Fastest preset to reduce memory usage
       `-profile:v baseline ` +              // Baseline profile for compatibility
       `-level:v 3.0 ` +                     // Level 3.0
       `-pix_fmt yuv420p ` +                 // Pixel format
       `-refs 1 ` +                          // Reference frames
-      `-crf 23 ` +                          // Quality
+      `-crf 28 ` +                          // Slightly lower quality for less memory
       `-bf 0 ` +                            // No B-frames
-      `-coder 0 ` +                         // CAVLC entropy coding
+      `-threads 1 ` +                       // Single thread to reduce memory
       `-movflags +faststart ` +             // Fast start for web
       `-c:a aac ` +                         // AAC audio
       `-b:a 128k ` +                        // Audio bitrate
