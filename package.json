@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "setup": "node scripts/setup-yt-dlp.js",
-    "postinstall": "node scripts/setup-yt-dlp.js"
+    "postinstall": "echo 'Postinstall complete'"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.7",

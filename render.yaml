@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: video-downloader
+    runtime: node
+    buildCommand: ./render-build.sh
+    startCommand: ./render-start.sh
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+    buildFilter:
+      paths:
+        - "**/*.js"
+        - "**/*.ts"
+        - "**/*.tsx"
+        - "**/*.json"
+        - "**/*.css"
+        - "**/*.sh"
+        - "package*.json"
