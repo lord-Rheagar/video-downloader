@@ -10,7 +10,7 @@ A modern, sleek video downloader application built with Next.js 14+, TypeScript,
 ## ✨ Features
 
 ### 🎯 Core Functionality
-- **Multi-Platform Support**: Currently supports YouTube with more platforms coming soon
+- **Multi-Platform Support**: Currently supports Reddit and Twitter, with more platforms coming soon
 - **Smart URL Detection**: Automatically detects the video platform from the URL
 - **Video Information Extraction**: Retrieves video title, duration, thumbnail, and available formats
 - **Error Handling**: Comprehensive error handling with user-friendly messages
